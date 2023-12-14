@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link href="{{url_for('static', filename='css/bootstrap.min.css')}}" rel="stylesheet">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <title>提交关键词</title>
+    <style>
+        .my-h1 {
+            margin-bottom: 3rem!important;
+            margin-top: 2rem!important;
+            font-size: 42px;
+            text-align: center;
+        }
+    </style>
+    <script>
+        window.onload = function() {
+            var message = "{{ message }}";
+            if (message != '') {
+                alert(message);
+            }
+        };
+        function checkLength(input) {
+            var errorDiv = document.getElementById(input.id + '-error');
+            if (input.value.length > 10) {
+                errorDiv.style.display = 'block';
+            } else {
+                errorDiv.style.display = 'none';
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card mt-5 rounded bg-light">
+                    <div class="card-body">
+                        <h1 class="card-title text-center mb-3">提交关键词</h1>
+                        <form id="myForm" action="{{ url_for('submit', grade=grade, lesson=lesson) }}" method="post" class="text-center">
+                            <div class="row mb-3 justify-content-center">
+                                <div class="col-md-2"><input type="number" id="class_n" name="class_n" placeholder="班级" class="form-control" required></div>
+                                <div class="col-md-2"><input type="number" id="stu_id" name="stu_id" placeholder="学号" class="form-control" required></div>
+                                <div class="col-md-3"><input type="text" id="name" name="name" placeholder="姓名" class="form-control" required></div>
+                            </div>
+                            <div class="row mb-3 justify-content-center" style="margin-top: 30px;">
+                                <div class="col-auto"><label for="keyword1">关键词1:<span style="color: red;">*</span></label></div>
+                                <div class="col-md-6">
+                                    <input type="text" id="keyword1" name="keyword1" class="form-control" required maxlength="10" oninput="checkLength(this)">
+                                    <div id="keyword1-error" style="color: red; display: none;">关键词长度不能超过10个字符</div>
+                                </div>
+                            </div>
+                            <div class="row mb-3 justify-content-center">
+                                <div class="col-auto"><label for="keyword2">关键词2:</label></div>
+                                <div class="col-md-6">
+                                    <input type="text" id="keyword2" name="keyword2" class="form-control" maxlength="10" oninput="checkLength(this)">
+                                    <div id="keyword2-error" style="color: red; display: none;">关键词长度不能超过10个字符</div>
+                                </div>
+                            </div>
+                            <div class="row mb-3 justify-content-center">
+                                <div class="col-auto"><label for="keyword3">关键词3:</label></div>
+                                <div class="col-md-6">
+                                    <input type="text" id="keyword3" name="keyword3" class="form-control" maxlength="10" oninput="checkLength(this)">
+                                    <div id="keyword3-error" style="color: red; display: none;">关键词长度不能超过10个字符</div>
+                                </div>
+                            </div>
+                            <div class="row mb-3 justify-content-center">
+                                <div class="col-auto"><input type="submit" value="提交" class="btn btn-primary btn-lg"></div>
+                            </div>
+                            <input type="hidden" id="grade" name="grade" value="{{ grade }}">
+                            <input type="hidden" id="lesson" name="lesson" value="{{ lesson }}">
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

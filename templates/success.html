@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <link href="{{url_for('static', filename='css/bootstrap.min.css')}}" rel="stylesheet">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <title>提交关键词</title>
+  <style>
+    .my-h1 {
+        margin-bottom: 1rem!important;
+		    margin-top: 2rem!important;
+        text-align: center;
+        width: 100%;
+        font-size: 52px;
+    }
+  </style>
+</head>
+<body class="bg-light">
+    <div class="container">
+        <div class="row justify-content-md-center gap-4">
+            <div class="col-md-6">
+                <div class="card bg-info" style="margin-top: 100px;">
+                    <div class="card-body">
+                        <h1 class="card-title text-center">提交成功</h1>
+                        <p class="card-text text-center">你的关键词已经成功提交，感谢你的参与！</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> 
+</body>
+</html>
