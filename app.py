@@ -4,23 +4,25 @@
 @File    :  app.py
 @Time    :  2023/12/13
 @Author  :  HDUZN
-@Version :  1.1
+@Version :  1.2
 @Contact :  hduzn@vip.qq.com
 @License :  (C)Copyright 2023-2024
 @Desc    :  1.提交关键词：获取每一课的关键词提交链接
             2.显示词云：显示每个年级每一课的词云结果
-            
-            pip install flask flask_sqlalchemy gevent pandas openpyxl wordcloud
+            3.下载数据：下载每个年级/班级的数据
+            pip install flask flask_sqlalchemy gevent pandas openpyxl wordcloud urllib3
 '''
 
 from wordcloud import WordCloud
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, url_for, send_file
 from gevent.pywsgi import WSGIServer
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import distinct, and_
-import os, base64, json
+from sqlalchemy import distinct, and_, asc
 from io import BytesIO
 from collections import Counter
+from urllib.parse import quote, unquote
+import os, base64, json
+import pandas as pd
 
 app = Flask(__name__)
 app.secret_key = 'wordcloudsyssss'
@@ -64,7 +66,7 @@ class Data(db.Model) :
 def index():
     return render_template('index.html')
 
-# 提交关键词
+# 1.提交关键词
 @app.route('/submit_all', methods=['GET', 'POST'])
 def submit_all():
     global grade_info, grade_info_reverse
@@ -125,7 +127,7 @@ def submit(grade, lesson):
         
     return render_template('submit.html', grade=grade, lesson=lesson, message=message)
 
-# 查询结果
+# 2.显示词云
 @app.route('/query_all', methods=['GET', 'POST'])
 def query_all():
     global grade_info, grade_info_reverse
@@ -208,6 +210,94 @@ def get_class_options():
     # 将班级选项转换为 JSON 格式并返回
     return jsonify(class_options_json)
 
+@app.route('/get_classes', methods=['POST'])
+def get_classes():
+    global grade_info_reverse
+    get_grade = request.form.get('grade')
+    grade = grade_info_reverse[get_grade] # '5-1'
+    results = db.session.query(distinct(Data.class_n)).filter(Data.grade==grade).all()
+    classes = [row[0] for row in results]
+    return jsonify(classes)
+
+# 3.下载数据
+@app.route('/download', methods=['GET', 'POST'])
+def download():
+    global grade_info, grade_info_reverse
+    # 获取唯一的年级
+    results = db.session.query(distinct(Data.grade)).all()
+    grade_options = [row[0] for row in results] # 所有的年级
+    grade_info_options = [grade_info[option] for option in grade_options]
+    # print('grade_info_options:', grade_info_options)
+
+    # 获取唯一的班级
+    results = db.session.query(distinct(Data.class_n)).all()
+    class_n_options = [row[0] for row in results]
+
+    get_grade = ''
+    class_n = ''
+    download_url = ''
+    ex_filename = ''
+    if request.method == 'POST':
+        get_grade = request.form.get('grade')
+        class_n = request.form.get('class_n')
+        grade = grade_info_reverse[get_grade] # '5-1'
+
+        # 查询数据库，获取数据
+        if class_n:
+            results = (db.session.query(Data)
+                    .filter(Data.grade==grade, Data.class_n==class_n)
+                    .order_by(asc(Data.grade), asc(Data.class_n), asc(Data.lesson), asc(Data.stu_id))
+                    .all())
+            ex_filename = f'{class_n}数据'
+        else:
+            results = (db.session.query(Data)
+                    .filter(Data.grade==grade)
+                    .order_by(asc(Data.grade), asc(Data.class_n), asc(Data.lesson), asc(Data.stu_id))
+                    .all())
+            ex_filename = f'{get_grade}数据'
+
+        # 将查询结果转换为字典，并删除 'id' 键
+        data = [result.__dict__ for result in results]
+        for item in data:
+            item.pop('_sa_instance_state', None)  # 删除 SQLAlchemy 的内部字段
+            item.pop('id', None)  # 删除 'id' 键
+        
+        # 将数据写入 Excel 表格
+        filename = write_to_excel(data, ex_filename)
+
+        # 生成下载链接，使用编码的文件名
+        encoded_filename = quote(filename)
+        download_url = url_for('download_file', filename=encoded_filename)
+
+    return render_template('download.html', download_url=download_url, ex_filename=ex_filename, grade_options=grade_info_options, class_n_options=class_n_options, selected_grade=get_grade, selected_class_n=class_n)
+ 
+@app.route('/download_file/<path:filename>', methods=['GET'])
+def download_file(filename):
+    # 使用 URL 解码的文件名
+    decoded_filename = unquote(filename)
+    print('decoded_filename:', decoded_filename)
+    return send_file(decoded_filename, as_attachment=True)
+
+# 将数据写入 Excel 表格
+def write_to_excel(data, ex_filename):
+    df = pd.DataFrame(data)
+    ex_path = os.path.join('static', 'ex_data')
+    if not os.path.exists(ex_path):
+        os.makedirs(ex_path)
+    file_path = os.path.join(ex_path, f'{ex_filename}.xlsx')
+
+    # 重命名列名
+    df = df.rename(columns={
+        'class_n': '班级',
+        'name': '姓名',
+        'words': '关键词',
+        'lesson': '第几课',
+        'stu_id': '学号',
+        'grade': '年级'
+    })
+    df.to_excel(file_path, index=False)
+    return file_path
+
 # 生成词云
 def generate_word_cloud(word_list):
     # 创建词云
@@ -250,3 +340,4 @@ if __name__ == '__main__':
 
     http_server = WSGIServer(('0.0.0.0', 5005), app)
     http_server.serve_forever()
+
