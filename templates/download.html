@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link href="{{url_for('static', filename='css/bootstrap.min.css')}}" rel="stylesheet">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <script src="{{ url_for('static', filename='js/jquery-3.5.1.min.js') }}"></script>
+    <title>下载数据</title>
+    <style>
+        .my-h1 {
+            margin-bottom: 3rem!important;
+            margin-top: 2rem!important;
+            font-size: 42px;
+            text-align: center;
+        }
+        </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="my-h1">下载数据</h1>
+        <form id="myForm" action="/download" method="post">
+            <div class="row">
+                <div class="col-md-3 form-group">
+                    <select class="form-control" id="grade" name="grade">
+                        <option value="">请选择年级</option>
+                        {% for grade in grade_options %}
+                            <option value="{{ grade }}" {% if grade == selected_grade %}selected{% endif %}>{{ grade }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 form-group">
+                    <select class="form-control" id="class_n" name="class_n">
+                        <option value="">请选择班级</option>
+                        {% for class_n in class_n_options %}
+                            <option value="{{ class_n }}" {% if class_n == selected_class_n %}selected{% endif %}>{{ class_n }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 form-group">
+                    <button type="submit" class="btn btn-primary">查询</button>
+                </div>
+            </div>
+        </form>
+        <hr>
+        <div class="row mt-4">
+            {% if download_url %}
+                <a href="{{ download_url }}" class="text-primary" style="font-size: 1.5rem;" target="_blank">{{ ex_filename }}下载</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('myForm').addEventListener('submit', function(e) {
+            var grade = document.getElementById('grade').value;
+            if (grade === '') {
+                alert('请选择年级');
+                e.preventDefault();
+            }
+        });
+        
+        $(document).ready(function() {
+            var grade_select = $('#grade');
+            var class_n_select = $('#class_n');
+
+            function get_classes(grade) {
+                if (grade !== '') {
+                    $.ajax({
+                        url: '/get_classes',
+                        data: { 'grade': grade },
+                        type: 'POST',
+                        success: function(response) {
+                            class_n_select.empty();
+                            class_n_select.append('<option value="">请选择班级</option>');
+                            $.each(response, function(index, value) {
+                                class_n_select.append('<option value="' + value + '">' + value + '</option>');
+                            });
+                        },
+                        error: function(error) {
+                            console.log(error);
+                        }
+                    });
+                }
+            }
+
+            grade_select.change(function() {
+                get_classes($(this).val());
+            });
+
+            // 页面加载时，检查年级选择框的值
+            var grade = grade_select.val();
+            get_classes(grade);
+        });
+    </script>
+</body>
+</html>
