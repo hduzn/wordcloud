@@ -18,7 +18,7 @@
 pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 
 # 2.需要安装的库
-pip install flask flask_sqlalchemy gevent pandas openpyxl wordcloud
+pip install flask flask_sqlalchemy gevent pandas openpyxl wordcloud urllib3
 
 ```
 
